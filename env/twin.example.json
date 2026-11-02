@@ -1,0 +1,11 @@
+{
+  "TREASURY_MODE": "dry-run",
+  "HOME_CURRENCY": "ARS",
+  "MAX_OP_AMOUNT": "100000",
+  "MAX_DAILY_AMOUNT": "500000",
+  "LIQUIDITY_BUFFER_DAYS": "7",
+  "INFLATION_MONTHLY_PCT": "2.5",
+  "ARBITRUM_RPC_URL": "https://arb1.arbitrum.io/rpc",
+  "ARC_NETWORK": "testnet",
+  "ARC_RPC_URL": "https://rpc.testnet.arc.io"
+}
