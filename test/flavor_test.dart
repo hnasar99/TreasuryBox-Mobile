@@ -32,6 +32,9 @@ void main() {
     expect(attributionReadyForLive('celo_b7k3p9da'), isTrue);
     expect(fromDataSuffix(vector)?.codes, ['celo_b7k3p9da']);
     expect(fromDataSuffix(vector)?.schemaId, 0);
+    expect(attributionReadyForLive(CeloTokens.attribution), isTrue);
+    expect(CeloTokens.attribution, 'celo_202a37e338a2');
+    expect(fromDataSuffix(toDataSuffix(CeloTokens.attribution))?.codes, ['celo_202a37e338a2']);
   });
 
   test('an empty agent id stays on the local registration file', () async {

@@ -86,7 +86,10 @@ class CeloTokens {
     'RIPIO_RAMP_BASE',
     defaultValue: 'https://ramp.ripio.com',
   );
-  static const attribution = String.fromEnvironment('CELO_ATTRIBUTION_CODE');
+  static const attribution = String.fromEnvironment(
+    'CELO_ATTRIBUTION_CODE',
+    defaultValue: 'celo_202a37e338a2',
+  );
   static const agentId = String.fromEnvironment('CELO_AGENT_ID');
   static const identityRegistry = String.fromEnvironment(
     'CELO_IDENTITY_REGISTRY',

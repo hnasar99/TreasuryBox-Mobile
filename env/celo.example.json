@@ -8,5 +8,6 @@
   "CELO_RPC_URL": "https://forno.celo.org",
   "TEXTILE_API_URL": "https://api.textilecredit.com/v2",
   "X402_FACILITATOR_URL": "https://api.x402.celo.org",
-  "RIPIO_RAMP_BASE": "https://ramp.ripio.com"
+  "RIPIO_RAMP_BASE": "https://ramp.ripio.com",
+  "CELO_ATTRIBUTION_CODE": "celo_202a37e338a2"
 }

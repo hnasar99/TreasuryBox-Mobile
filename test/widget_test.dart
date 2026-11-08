@@ -32,7 +32,7 @@ void main() {
     await tester.tap(find.text('Más'));
     await tester.pumpAndSettle();
     expect(find.text('Identidad del agente: Sin registrar en cadena'), findsWidgets);
-    expect(find.text('Falta el código de atribución'), findsWidgets);
+    expect(find.text('ERC-8021 celo_202a37e338a2'), findsWidgets);
     expect(find.textContaining('TODO(verify)'), findsNothing);
   });
 }
