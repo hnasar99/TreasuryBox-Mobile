@@ -6,6 +6,7 @@ import '../../core/model.dart';
 import '../../core/qr/qr_intent.dart';
 import '../../core/signer.dart';
 import 'attribution.dart';
+import 'identity.dart';
 import 'textile_client.dart';
 import 'tokens.dart';
 
@@ -26,7 +27,7 @@ final class TextileSwapPayload extends QuotePayload {
   bool get executable => true;
 }
 
-class RipioCeloEcosystem implements TreasuryEcosystem, TrackedInvoice {
+class RipioCeloEcosystem implements TreasuryEcosystem, TrackedInvoice, AgentDirectory {
   RipioCeloEcosystem({
     required this.homeCurrency,
     required this.live,
@@ -38,7 +39,8 @@ class RipioCeloEcosystem implements TreasuryEcosystem, TrackedInvoice {
   })  : catalog = catalog ?? const CeloTokens(),
         _reads = reads ?? EvmReadClient(),
         _textile = textile ?? TextileClient(baseUrl: CeloTokens.textileApi),
-        _clock = clock ?? DateTime.now;
+        _clock = clock ?? DateTime.now,
+        published = CeloIdentity.unpublished();
 
   final String homeCurrency;
   final bool live;
@@ -47,6 +49,24 @@ class RipioCeloEcosystem implements TreasuryEcosystem, TrackedInvoice {
   final EvmReadClient _reads;
   final TextileClient _textile;
   final DateTime Function() _clock;
+
+  @override
+  AgentIdentity published;
+
+  @override
+  Future<AgentIdentity> loadIdentity() async {
+    final id = catalog.agentTokenId.trim();
+    if (id.isEmpty) {
+      published = CeloIdentity.unpublished();
+      return published;
+    }
+    try {
+      published = await CeloIdentity(reads: _reads).read(id);
+    } catch (_) {
+      published = CeloIdentity.unpublished();
+    }
+    return published;
+  }
 
   @override
   String get id => 'ripio-celo';
@@ -367,22 +387,25 @@ class RipioCeloEcosystem implements TreasuryEcosystem, TrackedInvoice {
   }
 
   PreparedTx _tx({required String to, required String data, required String kind}) {
-    final suffix = CeloTokens.attribution;
-    final attributed = suffix.startsWith('0x') ? withAttribution(data, suffix) : data;
+    final code = catalog.attributionCode.trim();
+    final attributed = code.isEmpty ? data : withAttribution(data, code);
+    final decoded = fromDataSuffix(attributed);
     return PreparedTx(
       chain: celoChain,
       to: to,
       data: attributed,
       value: '0x0',
       kind: kind,
+      attributionCode: decoded?.codes.first,
+      attributionSchema: decoded?.schemaId,
       warnings: [
-        if (live && !attributionReadyForLive(suffix)) 'attribution-unverified',
+        if (!attributionReadyForLive(code)) 'attribution-unverified',
       ],
     );
   }
 
   void _guardLiveAttribution() {
-    if (live && !attributionReadyForLive(CeloTokens.attribution)) {
+    if (live && !attributionReadyForLive(catalog.attributionCode.trim())) {
       throw StateError('attribution-unverified');
     }
   }

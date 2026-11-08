@@ -16,9 +16,23 @@ void main() {
       signer: signer,
       store: MemoryKv(),
     )..locale = const Locale('es');
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(TreasuryApp(controller: controller, showSplash: false));
     await tester.pump();
     expect(find.text('TreasuryBox · Celo'), findsOneWidget);
-    expect(find.text('Caja'), findsOneWidget);
+    expect(find.text('Pagar'), findsOneWidget);
+    expect(find.text('Cobrar'), findsOneWidget);
+    expect(find.byTooltip('Escanear'), findsOneWidget);
+    await tester.tap(find.text('Caja'));
+    await tester.pumpAndSettle();
+    expect(find.text('Enviar a un beneficiario'), findsOneWidget);
+    await tester.tap(find.text('Más'));
+    await tester.pumpAndSettle();
+    expect(find.text('Identidad del agente: Sin registrar en cadena'), findsWidgets);
+    expect(find.text('Falta el código de atribución'), findsWidgets);
+    expect(find.textContaining('TODO(verify)'), findsNothing);
   });
 }

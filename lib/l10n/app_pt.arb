@@ -70,6 +70,10 @@
   "warnings": "Avisos",
   "steps": "Passos",
   "agentId": "Identidade do agente",
+  "agentUnregistered": "Sem registro na cadeia",
+  "agentOnChain": "agentId {id}",
+  "attributionTagged": "ERC-8021 {code}",
+  "attributionMissing": "Falta o código de atribuição",
   "companyLink": "Vínculo da empresa",
   "clearSession": "Encerrar sessão da empresa",
   "projectId": "Project ID da carteira",
@@ -82,5 +86,12 @@
   "reportInflation": "Contra a inflação",
   "chainSeparated": "Os totais não se somam entre redes.",
   "vaultDeposit": "Apartar",
-  "vaultRedeem": "Retirar"
+  "vaultRedeem": "Retirar",
+  "homeBalanceTitle": "Saldo em caixa",
+  "dailyCapLeft": "Resta do dia",
+  "opsTitle": "Operações",
+  "opPay": "Enviar a um beneficiário",
+  "opCollect": "Cobrar com um QR",
+  "opRotate": "Passar entre local e USD",
+  "opDeposit": "Ver o endereço e entrar com fundos"
 }

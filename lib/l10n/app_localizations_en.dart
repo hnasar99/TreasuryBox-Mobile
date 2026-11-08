@@ -225,6 +225,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentId => 'Agent identity';
 
   @override
+  String get agentUnregistered => 'Not registered on-chain';
+
+  @override
+  String agentOnChain(String id) {
+    return 'agentId $id';
+  }
+
+  @override
+  String attributionTagged(String code) {
+    return 'ERC-8021 $code';
+  }
+
+  @override
+  String get attributionMissing => 'Attribution code is missing';
+
+  @override
   String get companyLink => 'Company link';
 
   @override
@@ -263,4 +279,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get vaultRedeem => 'Withdraw';
+
+  @override
+  String get homeBalanceTitle => 'Balance';
+
+  @override
+  String get dailyCapLeft => 'Left today';
+
+  @override
+  String get opsTitle => 'Operations';
+
+  @override
+  String get opPay => 'Send to a beneficiary';
+
+  @override
+  String get opCollect => 'Collect with a QR';
+
+  @override
+  String get opRotate => 'Move between local and USD';
+
+  @override
+  String get opDeposit => 'Show the address and bring funds in';
 }

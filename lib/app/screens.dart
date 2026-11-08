@@ -11,6 +11,7 @@ import '../core/model.dart';
 import '../core/qr/qr_intent.dart';
 import '../flavors/flavor_config.dart';
 import '../l10n/app_localizations.dart';
+import '../ui/desk.dart';
 import '../ui/theme.dart';
 import 'controller.dart';
 
@@ -22,44 +23,88 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final flavor = controller.flavor;
+    final palette = flavor.palette;
     return ListenableBuilder(
       listenable: controller,
       builder: (context, _) {
         final report = controller.report();
-        return Scaffold(
-          body: SafeArea(
+        final home = controller.ecosystem.homeStable;
+        final usd = controller.usdBalance;
+        final cap = controller.dailyCap;
+        final spent = controller.dailySpent;
+        final leftRaw = cap.raw - spent.raw;
+        final remaining = Amount(raw: leftRaw < BigInt.zero ? BigInt.zero : leftRaw, decimals: cap.decimals);
+        return SafeArea(
+          child: RefreshIndicator(
+            onRefresh: controller.refresh,
             child: ListView(
-              padding: const EdgeInsets.all(FxSpace.l),
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(FxSpace.l, FxSpace.s, FxSpace.l, FxSpace.xl),
               children: [
-                Text(flavor.appName, style: Theme.of(context).textTheme.headlineSmall),
-                const SizedBox(height: 4),
-                Text(controller.env.live ? l10n.liveMode : l10n.dryRun),
-                const SizedBox(height: 12),
-                TextField(
-                  decoration: InputDecoration(labelText: l10n.watchHint),
-                  onChanged: controller.setWatch,
+                DeskHeader(
+                  palette: palette,
+                  title: flavor.appName,
+                  badge: controller.env.live ? l10n.liveMode : l10n.dryRun,
+                  testnet: flavor.ecosystem.chains.any((chain) => chain.testnet),
+                  testnetLabel: l10n.testnetBadge,
+                  onRefresh: controller.refresh,
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(child: FilledButton(onPressed: controller.refresh, child: Text(l10n.refresh))),
-                    const SizedBox(width: 8),
-                    OutlinedButton(onPressed: controller.toggleView, child: Text(controller.view == ValuationView.home ? l10n.usdView : l10n.homeView)),
-                  ],
+                const SizedBox(height: 10),
+                DeskContext(
+                  palette: palette,
+                  layerLabel: l10n.contextLayer,
+                  layer: l10n.navInicio,
+                  networkLabel: l10n.contextNetwork,
+                  network: home.chain.label,
+                  networkOk: controller.error == null && controller.balances.isNotEmpty,
+                  walletLabel: l10n.contextWallet,
+                  wallet: shortAddress(controller.address, l10n.noWallet),
+                  onWallet: controller.signer.address == null ? () => connectTreasuryWallet(context, controller) : null,
                 ),
                 if (controller.busy) const LinearProgressIndicator(),
                 if (controller.error != null) _note(controller.error!),
+                const SizedBox(height: 14),
+                BalanceHero(
+                  palette: palette,
+                  title: l10n.homeBalanceTitle,
+                  amount: controller.homeBalance,
+                  symbol: home.symbol,
+                  empty: l10n.homeEmpty,
+                  usdLine: usd == null ? null : '${glance(usd)} ${controller.ecosystem.usdLeg.symbol}',
+                  capLabel: l10n.dailyCapLeft,
+                  remaining: remaining,
+                  cap: cap,
+                  progress: spentShare(spent, cap),
+                ),
+                const SizedBox(height: 14),
+                Text(l10n.opsTitle, style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                OperationGrid(palette: palette, actions: _deskActions(context, l10n)),
                 const SizedBox(height: 16),
                 Text(l10n.perChain, style: Theme.of(context).textTheme.titleMedium),
-                Text(l10n.chainSeparated),
                 const SizedBox(height: 8),
-                if (controller.balances.isEmpty) Text(l10n.homeEmpty),
-                for (final chain in flavor.ecosystem.chains) _chainCard(context, chain, l10n),
-                const SizedBox(height: 16),
-                _fxLine(l10n),
-                const SizedBox(height: 12),
+                ChainBooks(
+                  palette: palette,
+                  chains: flavor.ecosystem.chains,
+                  balances: controller.balances,
+                  empty: l10n.homeEmpty,
+                  testnetBadge: l10n.testnetBadge,
+                  note: l10n.chainSeparated,
+                ),
+                const SizedBox(height: 8),
+                _WatchField(label: l10n.watchHint, initial: controller.watchAddress, onChanged: controller.setWatch),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(onPressed: controller.toggleView, child: Text(controller.view == ValuationView.home ? l10n.usdView : l10n.homeView)),
+                ),
+                _fxLine(l10n, palette),
+                const SizedBox(height: 8),
                 Text(l10n.pnl, style: Theme.of(context).textTheme.titleMedium),
-                Text(report.sufficient ? '${l10n.reportHold}: ${report.vsHold?.format() ?? '0'}' : l10n.insufficientData),
+                Text(
+                  report.sufficient ? '${l10n.reportHold}: ${report.vsHold?.format() ?? '0'}' : l10n.insufficientData,
+                  style: TextStyle(color: palette.textMid),
+                ),
               ],
             ),
           ),
@@ -68,25 +113,16 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _chainCard(BuildContext context, ChainRef chain, AppLocalizations l10n) {
-    final rows = controller.balances.where((row) => row.token.chain.caip2 == chain.caip2).toList();
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('${chain.label}${chain.testnet ? ' · ${l10n.testnetBadge}' : ''}'),
-            for (final row in rows)
-              Text('${row.token.symbol}  ${row.amount.format()}'),
-            if (rows.isEmpty) Text(l10n.homeEmpty),
-          ],
-        ),
-      ),
-    );
+  List<DeskAction> _deskActions(BuildContext context, AppLocalizations l10n) {
+    return [
+      DeskAction(icon: Icons.north_east, label: l10n.pay, hint: l10n.opPay, onTap: () => context.push('/caja/pagar')),
+      DeskAction(icon: Icons.qr_code, label: l10n.collect, hint: l10n.opCollect, onTap: () => context.push('/caja/cobrar')),
+      DeskAction(icon: Icons.swap_horiz, label: l10n.rotate, hint: l10n.opRotate, onTap: () => context.push('/caja/rotar')),
+      DeskAction(icon: Icons.south_west, label: l10n.deposit, hint: l10n.opDeposit, onTap: () => context.push('/caja/depositar')),
+    ];
   }
 
-  Widget _fxLine(AppLocalizations l10n) {
+  Widget _fxLine(AppLocalizations l10n, BrandPalette palette) {
     final rate = controller.spot;
     final shown = FxRate.shown(
       base: rate?.base ?? '',
@@ -95,8 +131,38 @@ class HomePage extends StatelessWidget {
       source: rate?.source,
       at: rate?.at,
     );
-    if (shown == null) return Text(l10n.noPrice);
-    return Text(l10n.fxSource(shown.source, shown.at.toIso8601String()));
+    final text = shown == null ? l10n.noPrice : l10n.fxSource(shown.source, shown.at.toIso8601String());
+    return Text(text, style: TextStyle(color: palette.textLow, fontSize: 12));
+  }
+}
+
+class _WatchField extends StatefulWidget {
+  const _WatchField({required this.label, required this.initial, required this.onChanged});
+
+  final String label;
+  final String initial;
+  final ValueChanged<String> onChanged;
+
+  @override
+  State<_WatchField> createState() => _WatchFieldState();
+}
+
+class _WatchFieldState extends State<_WatchField> {
+  late final TextEditingController field = TextEditingController(text: widget.initial);
+
+  @override
+  void dispose() {
+    field.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: field,
+      decoration: InputDecoration(labelText: widget.label),
+      onChanged: widget.onChanged,
+    );
   }
 }
 
@@ -107,38 +173,65 @@ class CajaPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final palette = controller.flavor.palette;
     return ListenableBuilder(
       listenable: controller,
-      builder: (context, _) => Scaffold(
-        body: SafeArea(
+      builder: (context, _) {
+        return SafeArea(
           child: ListView(
-            padding: const EdgeInsets.all(FxSpace.l),
+            padding: const EdgeInsets.fromLTRB(FxSpace.l, FxSpace.s, FxSpace.l, FxSpace.xl),
             children: [
-              Text(l10n.navCaja, style: Theme.of(context).textTheme.headlineSmall),
-              if (controller.status != null) Text(controller.status!),
+              DeskHeader(
+                palette: palette,
+                title: l10n.navCaja,
+                badge: controller.env.live ? l10n.liveMode : l10n.dryRun,
+                testnet: controller.flavor.ecosystem.chains.any((chain) => chain.testnet),
+                testnetLabel: l10n.testnetBadge,
+                onRefresh: controller.refresh,
+              ),
+              if (controller.status != null) ...[
+                const SizedBox(height: 8),
+                Text(controller.status!, style: TextStyle(color: palette.textMid)),
+              ],
               if (controller.error != null) _note(controller.error!),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  FilledButton(onPressed: () => context.push('/caja/rotar'), child: Text(l10n.rotate)),
-                  FilledButton(onPressed: () => context.push('/caja/pagar'), child: Text(l10n.pay)),
-                  FilledButton(onPressed: () => context.push('/caja/cobrar'), child: Text(l10n.collect)),
-                  FilledButton(onPressed: () => context.push('/caja/depositar'), child: Text(l10n.deposit)),
+              const SizedBox(height: 14),
+              Text(l10n.opsTitle, style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              OperationList(
+                palette: palette,
+                actions: [
+                  DeskAction(icon: Icons.north_east, label: l10n.pay, hint: l10n.opPay, onTap: () => context.push('/caja/pagar')),
+                  DeskAction(icon: Icons.qr_code, label: l10n.collect, hint: l10n.opCollect, onTap: () => context.push('/caja/cobrar')),
+                  DeskAction(icon: Icons.swap_horiz, label: l10n.rotate, hint: l10n.opRotate, onTap: () => context.push('/caja/rotar')),
+                  DeskAction(icon: Icons.south_west, label: l10n.deposit, hint: l10n.opDeposit, onTap: () => context.push('/caja/depositar')),
                 ],
               ),
               if (controller.ecosystem is YieldActions) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 Text(l10n.yieldReserve, style: Theme.of(context).textTheme.titleMedium),
-                Text(l10n.yieldDisclaimer),
+                Text(l10n.yieldDisclaimer, style: TextStyle(color: palette.textLow, fontSize: 12)),
+                const SizedBox(height: 8),
                 _AmountAction(label: l10n.vaultDeposit, action: controller.vaultDeposit),
+                const SizedBox(height: 8),
                 _AmountAction(label: l10n.vaultRedeem, action: controller.vaultRedeem),
+              ],
+              if (controller.ledger.events.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text(l10n.decisions, style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                for (final event in controller.ledger.events.reversed.take(6))
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Text(
+                      '${event.kind.name} · ${event.reason ?? ''}',
+                      style: TextStyle(color: palette.textMid),
+                    ),
+                  ),
               ],
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -202,6 +295,7 @@ class _RotatePageState extends State<RotatePage> {
             },
             child: Text(l10n.quote),
           ),
+          _attributionLine(widget.controller, l10n),
           if (quote != null) ...[
             const SizedBox(height: 12),
             Text('${quote!.amountOut.format()} ${quote!.to.symbol}'),
@@ -210,7 +304,9 @@ class _RotatePageState extends State<RotatePage> {
             FilledButton(
               onPressed: () async {
                 final ok = await widget.controller.confirmQuote(quote!);
-                if (context.mounted) _toast(context, ok ? l10n.registerDryRun : l10n.guardBlocked);
+                if (!context.mounted) return;
+                setState(() {});
+                _toast(context, ok ? l10n.registerDryRun : l10n.guardBlocked);
               },
               child: Text(widget.controller.env.live ? l10n.signSend : l10n.registerDryRun),
             ),
@@ -293,6 +389,7 @@ class _PayPageState extends State<PayPage> {
             },
             child: Text(l10n.quote),
           ),
+          _attributionLine(widget.controller, l10n),
           if (plan != null) ...[
             const SizedBox(height: 12),
             Text('${l10n.costHome}: ${plan!.totalCostHome.format()}'),
@@ -302,7 +399,9 @@ class _PayPageState extends State<PayPage> {
             FilledButton(
               onPressed: () async {
                 final ok = await widget.controller.confirmPayment(plan!);
-                if (context.mounted) _toast(context, ok ? l10n.registerDryRun : l10n.guardBlocked);
+                if (!context.mounted) return;
+                setState(() {});
+                _toast(context, ok ? l10n.registerDryRun : l10n.guardBlocked);
               },
               child: Text(widget.controller.env.live ? l10n.signSend : l10n.registerDryRun),
             ),
@@ -433,6 +532,7 @@ class _AgentPageState extends State<AgentPage> {
             children: [
               Text(l10n.navAgente, style: Theme.of(context).textTheme.headlineSmall),
               Text(l10n.agentHint),
+              _identityBlock(widget.controller, l10n),
               const SizedBox(height: 12),
               FilledButton(onPressed: widget.controller.daily, child: Text(l10n.dailyReview)),
               for (final note in widget.controller.dailyNotes) Text(note),
@@ -509,25 +609,7 @@ class _MorePageState extends State<MorePage> {
               ),
               const SizedBox(height: 8),
               FilledButton(
-                onPressed: () => controller.connect((uri) async {
-                  await showDialog<void>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: Text(l10n.connectWallet),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(uri.toString()),
-                          QrImageView(data: uri.toString(), size: 180),
-                        ],
-                      ),
-                      actions: [
-                        TextButton(onPressed: () => launchUrl(uri, mode: LaunchMode.externalApplication), child: Text(l10n.openLink)),
-                        TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.close)),
-                      ],
-                    ),
-                  );
-                }),
+                onPressed: () => connectTreasuryWallet(context, controller),
                 child: Text(l10n.connectWallet),
               ),
               Text(controller.signer.address ?? l10n.noWallet),
@@ -559,7 +641,7 @@ class _MorePageState extends State<MorePage> {
                 },
                 child: Text(l10n.decisions),
               ),
-              Text('${l10n.agentId}: TODO(verify)'),
+              _identityBlock(controller, l10n),
             ],
           ),
         ),
@@ -595,17 +677,18 @@ class _ScanPageState extends State<ScanPage> {
       body: Column(
         children: [
           if (camera)
-            SizedBox(
-              height: 240,
+            Expanded(
               child: MobileScanner(
                 onDetect: (capture) {
                   final raw = capture.barcodes.isEmpty ? null : capture.barcodes.first.rawValue;
                   if (raw != null) _take(raw);
                 },
               ),
-            ),
+            )
+          else
+            const Spacer(),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             child: Column(
               children: [
                 TextField(controller: paste, decoration: InputDecoration(labelText: l10n.pasteCode)),
@@ -635,6 +718,38 @@ class _ScanPageState extends State<ScanPage> {
   }
 }
 
+Widget _attributionLine(TreasuryController controller, AppLocalizations l10n) {
+  final code = controller.lastAttribution ?? controller.flavor.attributionCode;
+  if (code == null) return const SizedBox.shrink();
+  return Padding(
+    padding: const EdgeInsets.only(top: 8),
+    child: Text(code.isEmpty ? l10n.attributionMissing : l10n.attributionTagged(code)),
+  );
+}
+
+Widget _identityBlock(TreasuryController controller, AppLocalizations l10n) {
+  final identity = controller.agent;
+  return Padding(
+    padding: const EdgeInsets.only(top: 8),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (identity != null) ...[
+          Text(
+            identity.onChain
+                ? '${l10n.agentId}: ${l10n.agentOnChain(identity.agentId!)}'
+                : '${l10n.agentId}: ${l10n.agentUnregistered}',
+          ),
+          Text(identity.name),
+          Text(identity.description),
+          if (identity.agentUri != null && identity.agentUri!.isNotEmpty) Text(identity.agentUri!),
+        ],
+        _attributionLine(controller, l10n),
+      ],
+    ),
+  );
+}
+
 Widget _qr(String data) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Center(child: QrImageView(data: data, size: 180, backgroundColor: Colors.white)),
@@ -649,6 +764,30 @@ String _label(TokenRef token) => '${token.symbol} · ${token.chain.label}';
 
 void _toast(BuildContext context, String text) {
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+}
+
+Future<void> connectTreasuryWallet(BuildContext context, TreasuryController controller) {
+  final l10n = AppLocalizations.of(context);
+  return controller.connect((uri) async {
+    if (!context.mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.connectWallet),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(uri.toString()),
+            QrImageView(data: uri.toString(), size: 180),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => launchUrl(uri, mode: LaunchMode.externalApplication), child: Text(l10n.openLink)),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.close)),
+        ],
+      ),
+    );
+  });
 }
 
 class _AmountAction extends StatefulWidget {

@@ -36,6 +36,7 @@ class TreasuryController extends ChangeNotifier {
       inflationMonthlyPct: Decimal.parse(env.inflationMonthlyPct),
     );
     day = DayLedger.empty(artDayKey(_clock().toUtc()));
+    agent = _publishedIdentity(flavor.ecosystem);
   }
 
   final FlavorConfig flavor;
@@ -65,12 +66,29 @@ class TreasuryController extends ChangeNotifier {
   EcosystemSession? session;
   List<String> dailyNotes = [];
   Amount? vStart;
+  AgentIdentity? agent;
+  String? lastAttribution;
 
   String? get address {
     final signed = signer.address;
     if (signed != null && signed.isNotEmpty) return signed;
     final watch = watchAddress.trim();
     return watch.isEmpty ? null : watch;
+  }
+
+  Amount? get homeBalance => _homeBalance();
+
+  Amount? get usdBalance {
+    final rows = balances.where((row) => row.token.key == ecosystem.usdLeg.key).toList();
+    return sumSameBook(rows);
+  }
+
+  Amount get dailyCap => policy.maxDailyRaw(ecosystem.homeStable.decimals);
+
+  Amount get dailySpent {
+    final today = day.forDay(artDayKey(_clock().toUtc()));
+    final raw = env.live ? today.liveSpent : today.dryRunIntended;
+    return Amount(raw: raw, decimals: ecosystem.homeStable.decimals);
   }
 
   Future<void> load() async {
@@ -82,6 +100,7 @@ class TreasuryController extends ChangeNotifier {
         day = DayLedger.empty(artDayKey(_clock().toUtc()));
       }
     }
+    agent = await _loadIdentity(ecosystem);
     notifyListeners();
   }
 
@@ -149,8 +168,16 @@ class TreasuryController extends ChangeNotifier {
     if (!quote.executable || !flavor.features.contains(Feature.fxSwap)) {
       return _propose('Cotización no ejecutable', guard);
     }
-    if (!env.live) return _propose('Simulación de rotación ${quote.amountIn.format()} ${quote.from.symbol}', guard, home: home);
-    return _sign(await ecosystem.prepareExecute(quote), home, 'rotación');
+    final steps = await ecosystem.prepareExecute(quote);
+    if (!env.live) {
+      return _propose(
+        'Simulación de rotación ${quote.amountIn.format()} ${quote.from.symbol}',
+        guard,
+        home: home,
+        steps: steps,
+      );
+    }
+    return _sign(steps, home, 'rotación');
   }
 
   Future<bool> transfer(TokenRef token, String human, String to) async {
@@ -164,7 +191,14 @@ class TreasuryController extends ChangeNotifier {
     final guard = _guard(home, executable: true, human: true);
     if (!guard.ok) return _blocked(guard);
     final steps = await ecosystem.prepareTransfer(token, amount, to);
-    if (!env.live) return _propose('Simulación de envío ${amount.format()} ${token.symbol}', guard, home: home);
+    if (!env.live) {
+      return _propose(
+        'Simulación de envío ${amount.format()} ${token.symbol}',
+        guard,
+        home: home,
+        steps: steps,
+      );
+    }
     return _sign(steps, home, 'envío');
   }
 
@@ -227,7 +261,18 @@ class TreasuryController extends ChangeNotifier {
       );
     }
     if (!env.live) {
-      return _propose('Simulación de pago a ${plan.intent.to.name}', GuardResult.ok(buffer: Amount.zero(0), rotable: Amount.zero(0)), home: plan.totalCostHome);
+      var steps = plan.steps;
+      if (steps.isEmpty) {
+        try {
+          steps = await ecosystem.prepare(plan);
+        } catch (_) {}
+      }
+      return _propose(
+        'Simulación de pago a ${plan.intent.to.name}',
+        GuardResult.ok(buffer: Amount.zero(0), rotable: Amount.zero(0)),
+        home: plan.totalCostHome,
+        steps: steps,
+      );
     }
     final steps = await ecosystem.prepare(plan);
     return _sign(steps, plan.totalCostHome, 'pago');
@@ -351,7 +396,9 @@ class TreasuryController extends ChangeNotifier {
     return Future.value(false);
   }
 
-  Future<bool> _propose(String reason, GuardResult guard, {Amount? home}) async {
+  Future<bool> _propose(String reason, GuardResult guard, {Amount? home, List<PreparedTx>? steps}) async {
+    lastAttribution = _attributionCode(steps);
+    final tagged = _withAttribution(reason, steps);
     if (home != null && home.raw > BigInt.zero) {
       day = day.recordDryRun(dayKey: artDayKey(_clock().toUtc()), raw: home.raw);
       await store.write(DayLedger.storageKey, jsonEncode(day.toJson()));
@@ -364,12 +411,37 @@ class TreasuryController extends ChangeNotifier {
       dryRun: true,
       raw: home?.raw,
       decimals: home?.decimals,
-      reason: reason,
+      reason: tagged,
       guardResult: guard.code,
     ));
-    status = reason;
+    status = tagged;
     notifyListeners();
     return true;
+  }
+
+  String? _attributionCode(List<PreparedTx>? steps) {
+    for (final step in steps ?? const <PreparedTx>[]) {
+      final code = step.attributionCode;
+      if (code != null && code.isNotEmpty) return code;
+    }
+    return flavor.attributionCode;
+  }
+
+  String _withAttribution(String reason, List<PreparedTx>? steps) {
+    final code = _attributionCode(steps);
+    if (code == null) return reason;
+    if (code.isEmpty) return '$reason · atribución pendiente';
+    return '$reason · ERC-8021 $code';
+  }
+
+  AgentIdentity? _publishedIdentity(TreasuryEcosystem eco) {
+    if (eco is! AgentDirectory) return null;
+    return (eco as AgentDirectory).published;
+  }
+
+  Future<AgentIdentity?> _loadIdentity(TreasuryEcosystem eco) async {
+    if (eco is! AgentDirectory) return null;
+    return (eco as AgentDirectory).loadIdentity();
   }
 
   Future<bool> _sign(List<PreparedTx> steps, Amount home, String reason) async {

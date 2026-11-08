@@ -83,6 +83,33 @@ String encodeErc4626Redeem(BigInt shares, String receiver, String owner) => enco
 String encodeConvertToAssets(BigInt shares) =>
     encodeCall('convertToAssets(uint256)', [padUint(shares)]);
 
+String encodeTokenUri(BigInt tokenId) => encodeCall('tokenURI(uint256)', [padUint(tokenId)]);
+
+String encodeOwnerOf(BigInt tokenId) => encodeCall('ownerOf(uint256)', [padUint(tokenId)]);
+
+String decodeAbiString(String hexWord) {
+  final body = (hexWord.startsWith('0x') ? hexWord.substring(2) : hexWord).toLowerCase();
+  if (body.length < 128) {
+    throw const FormatException('The node returned an unreadable string.');
+  }
+  final offset = int.parse(body.substring(0, 64), radix: 16);
+  final start = offset * 2;
+  if (start < 0 || start + 64 > body.length) {
+    throw const FormatException('The node returned an unreadable string.');
+  }
+  final length = int.parse(body.substring(start, start + 64), radix: 16);
+  final dataStart = start + 64;
+  final dataEnd = dataStart + length * 2;
+  if (dataEnd > body.length) {
+    throw const FormatException('The node returned an unreadable string.');
+  }
+  final bytes = <int>[];
+  for (var i = dataStart; i < dataEnd; i += 2) {
+    bytes.add(int.parse(body.substring(i, i + 2), radix: 16));
+  }
+  return utf8.decode(bytes);
+}
+
 BigInt decodeUint(String hexWord) {
   final body = hexWord.startsWith('0x') ? hexWord.substring(2) : hexWord;
   if (body.isEmpty) return BigInt.zero;

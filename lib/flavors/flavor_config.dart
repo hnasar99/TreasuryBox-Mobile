@@ -29,6 +29,7 @@ class FlavorConfig {
     required this.forbiddenCoreTerms,
     required this.walletChains,
     required this.flavorHeader,
+    this.attributionCode,
   });
 
   final String id;
@@ -43,6 +44,7 @@ class FlavorConfig {
   final Set<String> forbiddenCoreTerms;
   final List<String> walletChains;
   final String flavorHeader;
+  final String? attributionCode;
 
   TreasuryEcosystem get ecosystem => ecosystems.first;
 }

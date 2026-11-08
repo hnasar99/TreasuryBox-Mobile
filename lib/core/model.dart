@@ -182,6 +182,8 @@ class PreparedTx {
     required this.value,
     required this.kind,
     this.warnings = const [],
+    this.attributionCode,
+    this.attributionSchema,
   });
 
   final ChainRef chain;
@@ -190,6 +192,8 @@ class PreparedTx {
   final String value;
   final String kind;
   final List<String> warnings;
+  final String? attributionCode;
+  final int? attributionSchema;
 
   Map<String, String> transaction(String from) => {
         'from': from,
@@ -509,4 +513,31 @@ abstract interface class YieldActions {
 
 abstract interface class TrackedInvoice {
   PaymentRequest collectTracked();
+}
+
+class AgentIdentity {
+  const AgentIdentity({
+    required this.name,
+    required this.description,
+    required this.registration,
+    this.agentId,
+    this.agentUri,
+    this.owner,
+    this.registry,
+  });
+
+  final String name;
+  final String description;
+  final Map<String, Object?> registration;
+  final String? agentId;
+  final String? agentUri;
+  final String? owner;
+  final String? registry;
+
+  bool get onChain => agentId != null && agentId!.isNotEmpty;
+}
+
+abstract interface class AgentDirectory {
+  AgentIdentity get published;
+  Future<AgentIdentity> loadIdentity();
 }

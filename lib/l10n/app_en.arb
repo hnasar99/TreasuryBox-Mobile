@@ -70,6 +70,10 @@
   "warnings": "Warnings",
   "steps": "Steps",
   "agentId": "Agent identity",
+  "agentUnregistered": "Not registered on-chain",
+  "agentOnChain": "agentId {id}",
+  "attributionTagged": "ERC-8021 {code}",
+  "attributionMissing": "Attribution code is missing",
   "companyLink": "Company link",
   "clearSession": "Sign out of the company",
   "projectId": "Wallet project ID",
@@ -82,5 +86,12 @@
   "reportInflation": "Versus inflation",
   "chainSeparated": "Totals are not added across networks.",
   "vaultDeposit": "Set aside",
-  "vaultRedeem": "Withdraw"
+  "vaultRedeem": "Withdraw",
+  "homeBalanceTitle": "Balance",
+  "dailyCapLeft": "Left today",
+  "opsTitle": "Operations",
+  "opPay": "Send to a beneficiary",
+  "opCollect": "Collect with a QR",
+  "opRotate": "Move between local and USD",
+  "opDeposit": "Show the address and bring funds in"
 }

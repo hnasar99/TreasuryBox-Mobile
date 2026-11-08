@@ -7,6 +7,9 @@ plugins {
 android {
     namespace = "io.treasurybox.treasurybox_mobile"
     compileSdk = flutter.compileSdkVersion
+    buildFeatures {
+        resValues = true
+    }
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

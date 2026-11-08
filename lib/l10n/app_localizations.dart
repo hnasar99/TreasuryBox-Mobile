@@ -520,6 +520,30 @@ abstract class AppLocalizations {
   /// **'Identidad del agente'**
   String get agentId;
 
+  /// No description provided for @agentUnregistered.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin registrar en cadena'**
+  String get agentUnregistered;
+
+  /// No description provided for @agentOnChain.
+  ///
+  /// In es, this message translates to:
+  /// **'agentId {id}'**
+  String agentOnChain(String id);
+
+  /// No description provided for @attributionTagged.
+  ///
+  /// In es, this message translates to:
+  /// **'ERC-8021 {code}'**
+  String attributionTagged(String code);
+
+  /// No description provided for @attributionMissing.
+  ///
+  /// In es, this message translates to:
+  /// **'Falta el código de atribución'**
+  String get attributionMissing;
+
   /// No description provided for @companyLink.
   ///
   /// In es, this message translates to:
@@ -597,6 +621,48 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Retirar'**
   String get vaultRedeem;
+
+  /// No description provided for @homeBalanceTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Saldo en caja'**
+  String get homeBalanceTitle;
+
+  /// No description provided for @dailyCapLeft.
+  ///
+  /// In es, this message translates to:
+  /// **'Queda del día'**
+  String get dailyCapLeft;
+
+  /// No description provided for @opsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Operaciones'**
+  String get opsTitle;
+
+  /// No description provided for @opPay.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviar a un beneficiario'**
+  String get opPay;
+
+  /// No description provided for @opCollect.
+  ///
+  /// In es, this message translates to:
+  /// **'Cobrar con un QR'**
+  String get opCollect;
+
+  /// No description provided for @opRotate.
+  ///
+  /// In es, this message translates to:
+  /// **'Pasar entre local y USD'**
+  String get opRotate;
+
+  /// No description provided for @opDeposit.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver la dirección y entrar fondos'**
+  String get opDeposit;
 }
 
 class _AppLocalizationsDelegate

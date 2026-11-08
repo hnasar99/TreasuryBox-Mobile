@@ -76,6 +76,20 @@
   "warnings": "Avisos",
   "steps": "Pasos",
   "agentId": "Identidad del agente",
+  "agentUnregistered": "Sin registrar en cadena",
+  "agentOnChain": "agentId {id}",
+  "@agentOnChain": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "attributionTagged": "ERC-8021 {code}",
+  "@attributionTagged": {
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+  "attributionMissing": "Falta el código de atribución",
   "companyLink": "Vínculo de empresa",
   "clearSession": "Cerrar sesión de empresa",
   "projectId": "Project ID de la wallet",
@@ -88,5 +102,12 @@
   "reportInflation": "Contra inflación",
   "chainSeparated": "Los totales no se suman entre redes.",
   "vaultDeposit": "Apartar",
-  "vaultRedeem": "Retirar"
+  "vaultRedeem": "Retirar",
+  "homeBalanceTitle": "Saldo en caja",
+  "dailyCapLeft": "Queda del día",
+  "opsTitle": "Operaciones",
+  "opPay": "Enviar a un beneficiario",
+  "opCollect": "Cobrar con un QR",
+  "opRotate": "Pasar entre local y USD",
+  "opDeposit": "Ver la dirección y entrar fondos"
 }

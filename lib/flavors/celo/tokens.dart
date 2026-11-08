@@ -23,8 +23,6 @@ const celoForbiddenCoreTerms = {
 };
 
 class CeloTokens {
-  const CeloTokens();
-
   static const wars = String.fromEnvironment(
     'RAIL_WARS_ADDRESS',
     defaultValue: '0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d',
@@ -89,6 +87,16 @@ class CeloTokens {
     defaultValue: 'https://ramp.ripio.com',
   );
   static const attribution = String.fromEnvironment('CELO_ATTRIBUTION_CODE');
+  static const agentId = String.fromEnvironment('CELO_AGENT_ID');
+  static const identityRegistry = String.fromEnvironment(
+    'CELO_IDENTITY_REGISTRY',
+    defaultValue: '0x8004A169FB4a3325136EB29fA0ceB6D2e539a432',
+  );
+
+  const CeloTokens({this.attributionCode = attribution, this.agentTokenId = agentId});
+
+  final String attributionCode;
+  final String agentTokenId;
 
   List<TokenRef> all() => [
         _local('wARS', wars, 'ARS'),

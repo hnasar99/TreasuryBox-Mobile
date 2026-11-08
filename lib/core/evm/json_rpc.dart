@@ -64,6 +64,18 @@ class EvmReadClient {
     return decodeUint(result);
   }
 
+  Future<String> readString({
+    required String rpcUrl,
+    required String to,
+    required String data,
+  }) async {
+    final result = await call(rpcUrl, 'eth_call', [
+      {'to': validateAddress(to), 'data': data},
+      'latest',
+    ]);
+    return decodeAbiString(result);
+  }
+
   Future<DateTime> latestBlockTime(String rpcUrl) async {
     final result = await rpc(rpcUrl, 'eth_getBlockByNumber', ['latest', false]);
     if (result is! Map || result['timestamp'] is! String) {

@@ -2,7 +2,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:treasurybox_mobile/core/amount.dart';
 import 'package:treasurybox_mobile/core/evm/abi.dart';
 import 'package:treasurybox_mobile/core/model.dart';
+import 'package:treasurybox_mobile/core/signer.dart';
 import 'package:treasurybox_mobile/flavors/celo/attribution.dart';
+import 'package:treasurybox_mobile/flavors/celo/ecosystem.dart';
+import 'package:treasurybox_mobile/flavors/celo/identity.dart';
 import 'package:treasurybox_mobile/flavors/celo/tokens.dart';
 import 'package:treasurybox_mobile/flavors/twin/tokens.dart';
 import 'package:treasurybox_mobile/flavors/twin/zonabank_api.dart';
@@ -19,12 +22,67 @@ void main() {
     expect(usdt.decimals, 6);
   });
 
-  test('attribution appends only an encoded suffix', () {
+  test('attribution encodes the published schema 0 vector', () {
+    const vector = '0x63656c6f5f62376b33703964610d0080218021802180218021802180218021';
+    expect(toDataSuffix('celo_b7k3p9da'), vector);
     expect(withAttribution('0xabcdef', ''), '0xabcdef');
-    expect(withAttribution('0xabcdef', '0x1234'), '0xabcdef1234');
-    expect(() => withAttribution('0xabcdef', 'celo_code'), throwsFormatException);
-    expect(attributionReadyForLive('celo_code'), isFalse);
-    expect(attributionReadyForLive('0x1234'), isTrue);
+    expect(withAttribution('0xabcdef', 'celo_b7k3p9da'), '0xabcdef${vector.substring(2)}');
+    expect(() => withAttribution('0xabcdef', '0x1234'), throwsFormatException);
+    expect(attributionReadyForLive('0x1234'), isFalse);
+    expect(attributionReadyForLive('celo_b7k3p9da'), isTrue);
+    expect(fromDataSuffix(vector)?.codes, ['celo_b7k3p9da']);
+    expect(fromDataSuffix(vector)?.schemaId, 0);
+  });
+
+  test('an empty agent id stays on the local registration file', () async {
+    final eco = RipioCeloEcosystem(
+      homeCurrency: 'ARS',
+      live: false,
+      signer: UnavailableSigner(),
+    );
+    final identity = await eco.loadIdentity();
+    expect(identity.onChain, isFalse);
+    expect(identity.registration.containsKey('registrations'), isFalse);
+  });
+
+  test('an unpublished agent keeps the local registration file off-chain', () {
+    final identity = CeloIdentity.unpublished();
+    expect(identity.onChain, isFalse);
+    expect(identity.agentId, isNull);
+    expect(identity.registration['type'], 'https://eips.ethereum.org/EIPS/eip-8004#registration-v1');
+    expect(identity.registration.containsKey('registrations'), isFalse);
+    expect(
+      (identity.registration['services'] as List).single,
+      {'name': 'wallet', 'endpoint': 'eip155:42220'},
+    );
+  });
+
+  test('dry-run transfer calldata carries a schema 0 suffix', () async {
+    final eco = RipioCeloEcosystem(
+      homeCurrency: 'ARS',
+      live: false,
+      signer: UnavailableSigner(),
+      catalog: const CeloTokens(attributionCode: 'celo_b7k3p9da'),
+    );
+    final token = const CeloTokens().bySymbol('wARS');
+    final steps = await eco.prepareTransfer(token, Amount.parse('1', 18), '0x${'11' * 20}');
+    expect(steps.single.attributionCode, 'celo_b7k3p9da');
+    expect(steps.single.attributionSchema, 0);
+    expect(fromDataSuffix(steps.single.data)?.codes, ['celo_b7k3p9da']);
+  });
+
+  test('live transfer refuses a short hex that is not a schema 0 suffix', () async {
+    final eco = RipioCeloEcosystem(
+      homeCurrency: 'ARS',
+      live: true,
+      signer: UnavailableSigner(),
+      catalog: const CeloTokens(attributionCode: '0x1234'),
+    );
+    final token = const CeloTokens().bySymbol('wARS');
+    await expectLater(
+      eco.prepareTransfer(token, Amount.parse('1', 18), '0x${'11' * 20}'),
+      throwsA(isA<StateError>()),
+    );
   });
 
   test('vault and transfer calldata use the canonical selectors', () {
@@ -38,6 +96,16 @@ void main() {
     expect(selector('deposit(uint256,address)'), '0x6e553f65');
     expect(selector('redeem(uint256,address,address)'), '0xba087652');
     expect(selector('transfer(address,uint256)'), '0xa9059cbb');
+    expect(selector('tokenURI(uint256)'), '0xc87b56dd');
+    expect(
+      decodeAbiString(
+        '0x'
+        '0000000000000000000000000000000000000000000000000000000000000020'
+        '0000000000000000000000000000000000000000000000000000000000000005'
+        '68656c6c6f000000000000000000000000000000000000000000000000000000',
+      ),
+      'hello',
+    );
   });
 
   test('a prepared remote step keeps chain and does not invent a signature', () {
