@@ -316,9 +316,11 @@ class TreasuryController extends ChangeNotifier {
 
   Future<void> connect(Future<void> Function(Uri uri) showPairing) async {
     await _work(() async {
-      if (env.walletConnectProjectId.isNotEmpty) {
-        await signer.configure(env.walletConnectProjectId);
+      final projectId = env.walletConnectProjectId.trim();
+      if (projectId.isEmpty) {
+        throw StateError('Falta WALLETCONNECT_PROJECT_ID. Reconstruí la app con el Project ID de Reown.');
       }
+      await signer.configure(projectId);
       await signer.connect(flavor.walletChains, showPairing);
       status = signer.address;
     });
