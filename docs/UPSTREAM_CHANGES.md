@@ -16,7 +16,7 @@ No se modifican Eve lab (`/home/hnasar/dev1/TreasuryBox`), AW (`/home/hnasar/dev
 - x402: `ripio/x402.ts` arma `${PUBLIC_BASE_URL}/pay` y el panel no tiene `/pay` (404). Opción A: página `/pay`. Opción B, ya tomada en mobile: el QR es EIP-681, no esa URL.
 - Uniswap: si Textile no cotiza, no ejecutar con `amountOutMinimum = 0`. Mobile lo deja como `NonExecutablePayload('uniswap-stub')`.
 - `POST /eve/v1/session`, el stream NDJSON y `POST /eve/v1/session/:id` con answers **no están** en el source del lab. `TODO(verify)`. El único call documentado es `POST /eve/v1/dev/schedules/daily_treasury`.
-- `@celo/attribution-tags` no está en `node_modules`. Hasta que el sufijo coincida con ese paquete, el envío live tira `attribution-unverified`.
+- El encoder Dart de Schema 0 coincide con `@celo/attribution-tags@0.5.0` para `celo_202a37e338a2`. Live sigue bloqueando un código `0x…`.
 - USDC Celo `0xcebA9300f2b948710d2653dD7B07f33A8B32118C` y USAT `0xD2ab3C9A02DBBAB236BfEC45D1d755DF4267F771` son `TODO(verify)`: no aparecen en los tres repos.
 
 ## AW

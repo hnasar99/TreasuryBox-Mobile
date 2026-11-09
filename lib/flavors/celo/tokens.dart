@@ -52,14 +52,13 @@ class CeloTokens {
     defaultValue: '0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e',
   );
 
-  /// TODO(verify): not in the Eve lab token list. Taken from the 2/11 plan's
-  /// Celo docs note until checked against the chain.
+  /// Celo mainnet USDC. `eth_call` symbol=USDC decimals=6. Not part of the Ripio wFIAT flow.
   static const usdc = String.fromEnvironment(
     'RAIL_USDC_ADDRESS',
     defaultValue: '0xcebA9300f2b948710d2653dD7B07f33A8B32118C',
   );
 
-  /// TODO(verify): same as USDC above.
+  /// Celo mainnet USAT. `eth_call` symbol=USAT decimals=6. Not part of this LatAm entry.
   static const usat = String.fromEnvironment(
     'RAIL_USAT_ADDRESS',
     defaultValue: '0xD2ab3C9A02DBBAB236BfEC45D1d755DF4267F771',
