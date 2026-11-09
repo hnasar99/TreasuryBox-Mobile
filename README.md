@@ -45,3 +45,8 @@ Copiá `env/*.example.json` si querés un archivo local. No commitees secretos. 
 iOS no entra en el hackathon: no hay schemes ni flavors de Xcode. El día de tesorería es America/Argentina/Buenos_Aires como UTC-3 fijo. Los montos son `BigInt` más decimales.
 
 Pedidos a Eve lab, AW y ZonaBank: `docs/UPSTREAM_CHANGES.md`. Mapping: `docs/TS_DART_MAPPING.md`. Pin del lab: `docs/EVE_LAB_PIN.md`.
+
+
+## Agente Rust
+
+La integración prevista reutiliza el runtime OpenHuman Embedded de AW. Arquitectura, revisión de licencia, límites de herramientas y estado real de integración: [docs/OPENHUMAN_INTEGRATION.md](docs/OPENHUMAN_INTEGRATION.md). Esta documentación no implica que el runtime ya esté empaquetado en el APK.
