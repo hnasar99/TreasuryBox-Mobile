@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#071018">
+  <meta name="description" content="TreasuryBox Celo web preview. Explore treasury proposals, scheduled payments and reports in dry-run mode. No transaction signing.">
+  <title>TreasuryBox</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    html,body{margin:0;background:#071018;color:#e7edf2;font-family:system-ui,sans-serif}
+    #loading{min-height:100dvh;display:grid;place-content:center;text-align:center;padding:0 24px}
+    #loading h1{font-size:28px;margin-bottom:8px}#loading p{max-width:420px;line-height:1.5;color:#b8c7d5}
+  </style>
+</head>
+<body>
+  <div id="loading" role="status"><h1>TreasuryBox</h1><p>Loading the treasury app. Web preview uses dry-run mode; no funds are moved.</p></div>
+  <noscript>This application requires JavaScript.</noscript>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

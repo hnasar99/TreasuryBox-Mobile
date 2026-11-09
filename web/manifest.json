@@ -1,0 +1,9 @@
+{
+  "name": "TreasuryBox",
+  "short_name": "TreasuryBox",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#071018",
+  "theme_color": "#071018",
+  "description": "TreasuryBox Celo dry-run web preview"
+}
