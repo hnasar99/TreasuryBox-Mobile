@@ -10,6 +10,7 @@ import '../signer.dart';
 
 class WalletConnectSigner extends ChangeNotifier implements TxSigner {
   ReownSignClient? _client;
+  String? _configuredProjectId;
   SessionData? _session;
   String? _address;
   List<String> _chains = const [];
@@ -28,8 +29,10 @@ class WalletConnectSigner extends ChangeNotifier implements TxSigner {
   Future<void> configure(String projectId) async {
     final id = projectId.trim();
     if (!RegExp(r'^[a-fA-F0-9]{32}$').hasMatch(id)) {
-      throw const FormatException('Enter the 32-character wallet project ID.');
+      throw const FormatException('WalletConnect Project ID inválido. Debe tener 32 caracteres hexadecimales.');
     }
+    if (_client != null && _configuredProjectId == id) return;
+
     final client = await ReownSignClient.createInstance(
       projectId: id,
       memoryStore: true,
@@ -43,6 +46,7 @@ class WalletConnectSigner extends ChangeNotifier implements TxSigner {
       ),
     ).timeout(const Duration(seconds: 30));
     _client = client;
+    _configuredProjectId = id;
     notifyListeners();
   }
 
@@ -50,7 +54,7 @@ class WalletConnectSigner extends ChangeNotifier implements TxSigner {
   Future<void> connect(List<String> chains, Future<void> Function(Uri uri) showPairing) async {
     final client = _client;
     if (client == null) {
-      throw StateError('Save a wallet project ID first.');
+      throw StateError('WalletConnect no está inicializado. Verificá WALLETCONNECT_PROJECT_ID en el build.');
     }
     if (chains.isEmpty) throw StateError('This build has no chains to approve.');
     final response = await client.connect(
