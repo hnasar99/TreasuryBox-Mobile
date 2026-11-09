@@ -12,6 +12,7 @@ import '../core/qr/qr_intent.dart';
 import '../flavors/flavor_config.dart';
 import '../l10n/app_localizations.dart';
 import '../ui/desk.dart';
+import '../ui/forms.dart';
 import '../ui/theme.dart';
 import 'controller.dart';
 
@@ -158,9 +159,9 @@ class _WatchFieldState extends State<_WatchField> {
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
+    return TreasuryTextField(
+      label: widget.label,
       controller: field,
-      decoration: InputDecoration(labelText: widget.label),
       onChanged: widget.onChanged,
     );
   }
@@ -270,8 +271,7 @@ class _RotatePageState extends State<RotatePage> {
     final enabled = widget.controller.flavor.features.contains(Feature.fxSwap);
     return Scaffold(
       appBar: AppBar(title: Text(l10n.rotate)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: TreasuryFormBody(
         children: [
           if (!enabled) Text(l10n.featureOff),
           DropdownButton<TokenRef>(
@@ -280,14 +280,20 @@ class _RotatePageState extends State<RotatePage> {
             items: [for (final token in tokens) DropdownMenuItem(value: token, child: Text(_label(token)))],
             onChanged: (value) => setState(() => from = value ?? from),
           ),
+          const SizedBox(height: FxSpace.xl),
           DropdownButton<TokenRef>(
             isExpanded: true,
             value: to,
             items: [for (final token in tokens) DropdownMenuItem(value: token, child: Text(_label(token)))],
             onChanged: (value) => setState(() => to = value ?? to),
           ),
-          TextField(controller: amount, decoration: InputDecoration(labelText: l10n.amount)),
-          const SizedBox(height: 12),
+          const SizedBox(height: FxSpace.xl),
+          TreasuryTextField(
+            label: l10n.amount,
+            controller: amount,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          ),
+          const SizedBox(height: FxSpace.xxl),
           FilledButton(
             onPressed: () async {
               final result = await widget.controller.quote(from, to, amount.text);
@@ -353,21 +359,30 @@ class _PayPageState extends State<PayPage> {
     final tokens = widget.controller.ecosystem.tokens.where((item) => item.kind != TokenKind.gas && item.kind != TokenKind.yieldShare).toList();
     return Scaffold(
       appBar: AppBar(title: Text(l10n.pay)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: TreasuryFormBody(
         children: [
           Text(l10n.disclaimerCrossBorder),
-          TextField(controller: name, decoration: InputDecoration(labelText: l10n.beneficiary)),
-          TextField(controller: address, decoration: InputDecoration(labelText: l10n.address)),
-          TextField(controller: amount, decoration: InputDecoration(labelText: l10n.amount)),
-          TextField(controller: memo, decoration: InputDecoration(labelText: l10n.memo)),
+          const SizedBox(height: FxSpace.xxl),
+          TreasuryTextField(label: l10n.beneficiary, controller: name, textInputAction: TextInputAction.next),
+          const SizedBox(height: FxSpace.xl),
+          TreasuryTextField(label: l10n.address, controller: address, textInputAction: TextInputAction.next),
+          const SizedBox(height: FxSpace.xl),
+          TreasuryTextField(
+            label: l10n.amount,
+            controller: amount,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            textInputAction: TextInputAction.next,
+          ),
+          const SizedBox(height: FxSpace.xl),
+          TreasuryTextField(label: l10n.memo, controller: memo),
+          const SizedBox(height: FxSpace.xl),
           DropdownButton<TokenRef>(
             isExpanded: true,
             value: token,
             items: [for (final item in tokens) DropdownMenuItem(value: item, child: Text(_label(item)))],
             onChanged: (value) => setState(() => token = value ?? token),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: FxSpace.xxl),
           FilledButton(
             onPressed: () async {
               final beneficiary = Beneficiary(
@@ -435,11 +450,14 @@ class _CollectPageState extends State<CollectPage> {
     final tracked = widget.controller.collectTracked();
     return Scaffold(
       appBar: AppBar(title: Text(l10n.collect)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: TreasuryFormBody(
         children: [
-          TextField(controller: amount, decoration: InputDecoration(labelText: l10n.amount)),
-          const SizedBox(height: 12),
+          TreasuryTextField(
+            label: l10n.amount,
+            controller: amount,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          ),
+          const SizedBox(height: FxSpace.xxl),
           FilledButton(
             onPressed: () async {
               final next = await widget.controller.collect(amount.text);
@@ -469,8 +487,7 @@ class DepositPage extends StatelessWidget {
     final account = controller.address ?? l10n.noWallet;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.deposit)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: TreasuryFormBody(
         children: [
           Text(account),
           if (controller.address != null) _qr(controller.address!),
@@ -527,17 +544,18 @@ class _AgentPageState extends State<AgentPage> {
       listenable: widget.controller,
       builder: (context, _) => Scaffold(
         body: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.all(16),
+          child: TreasuryFormBody(
             children: [
               Text(l10n.navAgente, style: Theme.of(context).textTheme.headlineSmall),
+              const SizedBox(height: FxSpace.s),
               Text(l10n.agentHint),
               _identityBlock(widget.controller, l10n),
               const SizedBox(height: 12),
               FilledButton(onPressed: widget.controller.daily, child: Text(l10n.dailyReview)),
               for (final note in widget.controller.dailyNotes) Text(note),
-              const SizedBox(height: 12),
-              TextField(controller: prompt, decoration: InputDecoration(labelText: l10n.memo)),
+              const SizedBox(height: FxSpace.xxl),
+              TreasuryTextField(label: l10n.memo, controller: prompt, minLines: 3, maxLines: 6),
+              const SizedBox(height: FxSpace.xxl),
               FilledButton(
                 onPressed: () async {
                   final text = prompt.text.trim();
@@ -546,8 +564,9 @@ class _AgentPageState extends State<AgentPage> {
                 },
                 child: Text(l10n.proposalTitle),
               ),
-              const SizedBox(height: 12),
-              Text(l10n.decisions),
+              const SizedBox(height: FxSpace.xxl),
+              Text(l10n.decisions, style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: FxSpace.s),
               for (final event in widget.controller.ledger.events.reversed.take(12))
                 Text('${event.kind.name} · ${event.reason ?? ''}'),
             ],
@@ -590,15 +609,16 @@ class _MorePageState extends State<MorePage> {
       listenable: controller,
       builder: (context, _) => Scaffold(
         body: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.all(16),
+          child: TreasuryFormBody(
             children: [
               Text(l10n.navMas, style: Theme.of(context).textTheme.headlineSmall),
+              const SizedBox(height: FxSpace.s),
               Text(controller.env.live ? l10n.liveMode : l10n.dryRun),
               Text('${l10n.buffer}: ${controller.policy.liquidityBufferDays}'),
               Text('${controller.policy.homeCurrency} ${controller.policy.maxOpHome} / ${controller.policy.maxDailyHome}'),
               const SizedBox(height: 8),
               DropdownButton<Locale>(
+                isExpanded: true,
                 value: controller.locale ?? Localizations.localeOf(context),
                 items: const [
                   DropdownMenuItem(value: Locale('es'), child: Text('Español')),
@@ -612,16 +632,34 @@ class _MorePageState extends State<MorePage> {
                 onPressed: () => connectTreasuryWallet(context, controller),
                 child: Text(l10n.connectWallet),
               ),
+              const SizedBox(height: FxSpace.s),
               Text(controller.signer.address ?? l10n.noWallet),
-              const SizedBox(height: 12),
-              TextField(controller: link, decoration: InputDecoration(labelText: l10n.companyLink)),
+              const SizedBox(height: FxSpace.xxl),
+              TreasuryTextField(label: l10n.companyLink, controller: link),
+              const SizedBox(height: FxSpace.xxl),
               OutlinedButton(onPressed: () => controller.redeemLink(link.text), child: Text(l10n.save)),
-              Text(controller.session?.businessName ?? ''),
-              const SizedBox(height: 12),
-              Text(l10n.scheduled),
-              TextField(controller: supplier, decoration: InputDecoration(labelText: l10n.supplier)),
-              TextField(controller: due, decoration: InputDecoration(labelText: l10n.dueDate)),
-              TextField(controller: amount, decoration: InputDecoration(labelText: l10n.amount)),
+              if (controller.session != null) ...[
+                const SizedBox(height: FxSpace.s),
+                Text(controller.session!.businessName),
+              ],
+              const SizedBox(height: 32),
+              Text(l10n.scheduled, style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: FxSpace.xl),
+              TreasuryTextField(label: l10n.supplier, controller: supplier, textInputAction: TextInputAction.next),
+              const SizedBox(height: FxSpace.xl),
+              TreasuryTextField(
+                label: l10n.dueDate,
+                controller: due,
+                keyboardType: TextInputType.datetime,
+                textInputAction: TextInputAction.next,
+              ),
+              const SizedBox(height: FxSpace.xl),
+              TreasuryTextField(
+                label: l10n.amount,
+                controller: amount,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              ),
+              const SizedBox(height: FxSpace.xxl),
               OutlinedButton(
                 onPressed: () {
                   controller.addScheduled(ScheduledPayment(
@@ -633,7 +671,7 @@ class _MorePageState extends State<MorePage> {
                 },
                 child: Text(l10n.addScheduled),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 32),
               OutlinedButton(
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: controller.ledger.toCsv()));
@@ -691,8 +729,8 @@ class _ScanPageState extends State<ScanPage> {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             child: Column(
               children: [
-                TextField(controller: paste, decoration: InputDecoration(labelText: l10n.pasteCode)),
-                const SizedBox(height: 8),
+                TreasuryTextField(label: l10n.pasteCode, controller: paste),
+                const SizedBox(height: FxSpace.xxl),
                 FilledButton(onPressed: () => _take(paste.text), child: Text(l10n.save)),
                 if (message != null) Text(message!),
               ],
@@ -811,12 +849,23 @@ class _AmountActionState extends State<_AmountAction> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(child: TextField(controller: field)),
-        const SizedBox(width: 8),
-        FilledButton(onPressed: () => widget.action(field.text), child: Text(widget.label)),
-      ],
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 680),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TreasuryTextField(
+              label: AppLocalizations.of(context).amount,
+              controller: field,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            ),
+            const SizedBox(height: FxSpace.xxl),
+            FilledButton(onPressed: () => widget.action(field.text), child: Text(widget.label)),
+          ],
+        ),
+      ),
     );
   }
 }
