@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:treasurybox_mobile/app/controller.dart';
+import 'package:treasurybox_mobile/app/screens.dart';
 import 'package:treasurybox_mobile/bootstrap.dart';
 import 'package:treasurybox_mobile/core/app_env.dart';
 import 'package:treasurybox_mobile/core/ledger.dart';
@@ -31,6 +32,14 @@ void main() {
     expect(find.text('Enviar a un beneficiario'), findsOneWidget);
     await tester.tap(find.text('Más'));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Identidad del agente: Sin registrar en cadena'),
+      300,
+      scrollable: find.descendant(
+        of: find.byType(MorePage),
+        matching: find.byType(Scrollable),
+      ).first,
+    );
     expect(find.text('Identidad del agente: Sin registrar en cadena'), findsWidgets);
     expect(find.text('ERC-8021 celo_202a37e338a2'), findsWidgets);
     expect(find.textContaining('TODO(verify)'), findsNothing);

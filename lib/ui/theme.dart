@@ -94,6 +94,8 @@ ThemeData treasuryTheme(BrandPalette palette) {
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: palette.surfaceHigh,
+      isDense: false,
+      contentPadding: const EdgeInsets.all(FxSpace.l),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(FxRadius.button)),
     ),
     navigationBarTheme: NavigationBarThemeData(
